@@ -7,9 +7,9 @@
 # template, tag a new release, and the next bump PR carries the change.
 
 cask "moria" do
-  version "0.2.14"
-  sha256  "24d851c61731c4cc47cb5f7d8e8fd527058a94f7ad57dec355f0e3070abe3f48"
-  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.14/moria-0.2.14-macos.tar.gz"
+  version "0.2.15"
+  sha256  "879faf605908124b9bd94833962b330e662d42cf2c8c3fd19c83f0ba8345b4b0"
+  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.15/moria-0.2.15-macos.tar.gz"
 
   name "Moria"
   desc "Local-setup CLI for the Moria platform"
@@ -42,19 +42,32 @@ cask "moria" do
     system_command "/System/Library/Frameworks/CoreServices.framework/" \
                    "Frameworks/LaunchServices.framework/Support/lsregister",
                    args: ["-f", "#{appdir}/Moria.app"]
+    # 3) Install the Moria Bridge LaunchAgent so the local daemon runs at
+    #    login. Safe to install even though the bridge UI ships disabled
+    #    (BRIDGE_UI_ENABLED=false): the daemon only serves authenticated
+    #    loopback requests, no browser connects until the flag flips, and the
+    #    backend kill-switch can disable the whole fleet instantly. Best-effort
+    #    (must_succeed: false) — a launchctl hiccup must not fail the install.
+    system_command "#{appdir}/Moria.app/Contents/MacOS/moria",
+                   args: ["daemon", "install"],
+                   must_succeed: false
   end
 
-  uninstall delete: [
-    # Cask removes the bundle and the binary symlink itself. We add the
-    # support directory cleanup here so a stale .command file from an old
-    # TCC denial doesn't survive a reinstall.
-    "#{Dir.home}/Library/Application Support/Moria/run-*.command",
-  ]
+  # Boot out the LaunchAgent and remove its plist on uninstall so we don't
+  # leave a dangling background job pointing at a deleted binary.
+  uninstall launchctl: "com.moria.bridge",
+            delete:    [
+              "#{Dir.home}/Library/LaunchAgents/com.moria.bridge.plist",
+              # Stale .command file from an old TCC denial — clean it so it
+              # doesn't survive a reinstall.
+              "#{Dir.home}/Library/Application Support/Moria/run-*.command",
+            ]
 
   # `brew uninstall --zap` removes user data too. The log directory is
   # large enough to be worth opting into removal explicitly.
   zap trash: [
     "~/Library/Application Support/Moria",
     "~/Library/Logs/Moria",
+    "~/Library/LaunchAgents/com.moria.bridge.plist",
   ]
 end
