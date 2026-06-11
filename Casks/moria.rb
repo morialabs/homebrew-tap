@@ -7,9 +7,9 @@
 # template, tag a new release, and the next bump PR carries the change.
 
 cask "moria" do
-  version "0.2.24"
-  sha256  "c4d4c684a92c9e2ed2c95f88cecd7d35c9f1971574f28dd5cc8575de2cd85b92"
-  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.24/moria-0.2.24-macos.tar.gz"
+  version "0.2.25"
+  sha256  "64966ba0654931abcfb70105b7c23fb9aafc787c7d7e321877a1076212acecb9"
+  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.25/moria-0.2.25-macos.tar.gz"
 
   name "Moria"
   desc "Local-setup CLI for the Moria platform"
@@ -42,22 +42,32 @@ cask "moria" do
     system_command "/System/Library/Frameworks/CoreServices.framework/" \
                    "Frameworks/LaunchServices.framework/Support/lsregister",
                    args: ["-f", "#{appdir}/Moria.app"]
-    # 3) Install the Moria Bridge LaunchAgent so the local daemon runs at
-    #    login. Safe to install even though the bridge UI ships disabled
-    #    (BRIDGE_UI_ENABLED=false): the daemon only serves authenticated
-    #    loopback requests, no browser connects until the flag flips, and the
-    #    backend kill-switch can disable the whole fleet instantly. Best-effort
-    #    (must_succeed: false) — a launchctl hiccup must not fail the install.
+    # 3) Install the single Moria Bridge LaunchAgent so the merged menu-bar
+    #    bridge (status item + in-process daemon) runs at login. `daemon install`
+    #    also boots out the legacy second agent (com.moria.bridge.menubar) from
+    #    pre-merge versions, so upgraders don't keep an orphaned process. Safe to
+    #    install even though the bridge UI ships disabled (BRIDGE_UI_ENABLED=
+    #    false): the daemon only serves authenticated loopback requests, no
+    #    browser connects until the flag flips, and the backend kill-switch can
+    #    disable the whole fleet instantly. Best-effort (must_succeed: false) — a
+    #    launchctl hiccup must not fail the install.
     system_command "#{appdir}/Moria.app/Contents/MacOS/moria",
                    args: ["daemon", "install"],
                    must_succeed: false
   end
 
-  # Boot out the LaunchAgent and remove its plist on uninstall so we don't
-  # leave a dangling background job pointing at a deleted binary.
-  uninstall launchctl: "com.moria.bridge",
+  # Boot out the LaunchAgent(s) and remove their plists on uninstall so we don't
+  # leave a dangling background job pointing at a deleted binary. The
+  # .menubar label is the legacy pre-merge agent — harmless to boot out when
+  # absent, and required to fully clean up a machine that upgraded across the
+  # merge.
+  uninstall launchctl: [
+              "com.moria.bridge",
+              "com.moria.bridge.menubar",
+            ],
             delete:    [
               "#{Dir.home}/Library/LaunchAgents/com.moria.bridge.plist",
+              "#{Dir.home}/Library/LaunchAgents/com.moria.bridge.menubar.plist",
               # Stale .command file from an old TCC denial — clean it so it
               # doesn't survive a reinstall.
               "#{Dir.home}/Library/Application Support/Moria/run-*.command",
@@ -69,5 +79,6 @@ cask "moria" do
     "~/Library/Application Support/Moria",
     "~/Library/Logs/Moria",
     "~/Library/LaunchAgents/com.moria.bridge.plist",
+    "~/Library/LaunchAgents/com.moria.bridge.menubar.plist",
   ]
 end
