@@ -7,9 +7,9 @@
 # template, tag a new release, and the next bump PR carries the change.
 
 cask "moria" do
-  version "0.2.46"
-  sha256  "83c04d21daa27776348c3ab159b05b2a162e30c1b25d2ddba3b9411ac00bb3b9"
-  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.46/moria-0.2.46-macos.tar.gz"
+  version "0.2.47"
+  sha256  "1993467ad7e3f9304607000290f964eed672c6f1375c4a874f3ea747e2ac5323"
+  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.47/moria-0.2.47-macos.tar.gz"
 
   name "Moria"
   desc "Local-setup CLI for the Moria platform"
@@ -61,11 +61,18 @@ cask "moria" do
   # .menubar label is the legacy pre-merge agent — harmless to boot out when
   # absent, and required to fully clean up a machine that upgraded across the
   # merge.
+  #
+  # These are all user-owned files (the plists are written 0644 by `daemon
+  # install` as the user; the .command is user-written too), so use `trash:`,
+  # NOT `delete:`. Homebrew's `delete:` worker runs `rm` with `sudo: true`
+  # UNCONDITIONALLY — which a detached, tty-less self-update can never satisfy,
+  # so the menu-bar "Update" would abort at this step on every upgrade. `trash:`
+  # moves them to ~/.Trash via a Swift helper with no sudo for user-owned files.
   uninstall launchctl: [
               "com.moria.bridge",
               "com.moria.bridge.menubar",
             ],
-            delete:    [
+            trash:     [
               "#{Dir.home}/Library/LaunchAgents/com.moria.bridge.plist",
               "#{Dir.home}/Library/LaunchAgents/com.moria.bridge.menubar.plist",
               # Stale .command file from an old TCC denial — clean it so it
