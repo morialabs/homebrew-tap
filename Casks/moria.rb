@@ -7,9 +7,9 @@
 # template, tag a new release, and the next bump PR carries the change.
 
 cask "moria" do
-  version "0.2.48"
-  sha256  "5130b44f5ac70a9d0f421d8dc870aa2228e6412424c67d1ad7a3e3e92ae17499"
-  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.48/moria-0.2.48-macos.tar.gz"
+  version "0.2.49"
+  sha256  "85b814806b98ebf40fcfc4f54928e1683e582560b1f266f321b738c3325e0975"
+  url     "https://github.com/morialabs/homebrew-tap/releases/download/cli-v0.2.49/moria-0.2.49-macos.tar.gz"
 
   name "Moria"
   desc "Local-setup CLI for the Moria platform"
